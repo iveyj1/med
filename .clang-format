@@ -1,0 +1,22 @@
+# .clang-format (minimal, Google-based)
+BasedOnStyle: Google
+
+# Don't reorder includes
+SortIncludes: Never
+IncludeBlocks: Preserve
+
+IndentWidth:     4
+
+# Better readability: no single-line control statements
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+
+# Align groups (nice for embedded code)
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+AlignTrailingComments: true
+
+# Optional: match your taste exactly
+PointerAlignment: Left
+ColumnLimit: 100

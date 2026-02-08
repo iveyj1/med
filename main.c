@@ -4,13 +4,18 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <assert.h>
+
 
 struct text_buf {
     char  *gap_buf;
-    size_t len;
+    size_t gap_buf_len;
     int    cursor;
     int    back;
     int    dirty;
+    int    target_gap_len;
 };
 struct text_buf main_buf = {0, 0, 0, 0, 0};
 
@@ -71,7 +76,7 @@ int buffer_getline(struct text_buf *buf, int startindex, char *line, int linebuf
         } else {
             line[i] = buf->gap_buf[buf->cursor - startindex + buf->back + i];
         }
-        if (line[i] == "\n") {
+        if (line[i] == '\n') {
             break;
         }
     }
@@ -100,27 +105,76 @@ size_t get_file_size(FILE *file) {
     return (size);
 }
 
-int init_buf(struct text_buf *buf) { return (0); }
+int init_buf(struct text_buf *buf, int text_size) { 
+    if(buf == 0) {
+        show_status("no buffer in init_buf");
+        return -1;
+    }
+    if(buf->gap_buf != 0) {
+        show_status("Error: buf has non-zero buffer pointer in init_buf");
+        return -1;
+    }
+    buf->target_gap_len = 65536;
+    buf->gap_buf_len = text_size + buf->target_gap_len;
+    buf->gap_buf = calloc(buf->gap_buf_len, sizeof(char));
+    buf->cursor = 0;
+    buf->back = buf->gap_buf_len - 1;
+    buf->dirty = false;
+    return 0; 
+}
 
-int fill_buf(struct text_buf *buf, FILE *file, size_t where, size_t numchars) { return (0); }
+int open_buf(struct text_buf *buf, const char *filename, FILE *file) { 
+    size_t size; 
+    if(buf == 0) {
+        show_status("open_buf: no buffer");
+        return -1;
+    }
+    if(strlen(filename) > 0) {
+        file = fopen(filename, "rw+");
+        if(file == 0) {
+            show_status("open_buf: can't open %s", filename);
+            return -1;
+        }
+        size = get_file_size(file);
+    } else {
+        size = 65536;
+    }
+    if(init_buf(&main_buf, size) < 0) {
+        show_status("open_buf: could not initialize buffer");
+        return -1;
+    }
 
-static size_t file_size = 0;
+#ifdef ASSERTIONS 
+    assert(size == buf->cursor + buf->gap_buf_len - buf->back);
+#endif
+    return size; 
+}
 
-int main(int argc, char **argv) {
+int setup_display() {
     setupConsole();
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1) {
         printf("Error getting screen size");
         return -1;
     }
-    draw_pane();
-    // show_status("speed racer shown");
-    // getchar();
-    // init_buf(&main_buf);
-    // if(argc > 0){
-    //     mainfile  = fopen(argv[1]);
-    //     if(mainfile == 0) {
-    //         status("Error, could not open %s", argv[1]);
-    //         return(1);
-    //     }
-    // }
+    return 0;
+} 
+
+int edit() {
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    if(setup_display() == -1) {
+        return -1;
+    }
+    show_status("starting");
+    if(argc > 0){
+        open_buf(&main_buf, main_file_name, main_file);
+    }
+    for(;;) {
+        draw_pane();
+        show_status("astatus %d", 99);
+        edit();
+        break;
+    }
 }

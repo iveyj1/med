@@ -168,6 +168,7 @@ int main(int argc, char **argv) {
         show_status("");
         moveTo(ws.ws_row, 0);
         clearLine();
+        restoreConsole();
         break;
     }
 }

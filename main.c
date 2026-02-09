@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <assert.h>
-
+#include "utils.h"
 
 struct text_buf {
     char  *gap_buf;
@@ -17,6 +17,7 @@ struct text_buf {
     int    dirty;
     int    target_gap_len;
 };
+
 struct text_buf main_buf = {0, 0, 0, 0, 0};
 
 FILE *main_file            = 0;
@@ -24,23 +25,11 @@ char  main_file_name[1024] = "";
 enum mode { NORMAL, INSERT, COMMAND };
 struct winsize ws = {0, 0};
 
-int snstrlen(const char *str, int buflen) {
-    int i;
-    for (i = 0; i < buflen; i++) {
-        if (str[i] == '\0') {
-            break;
-        }
-    }
-    if (i == buflen) {
-        return (-1);
-    }
-    return (i);
-}
-
 int show_status(const char *fmt, ...) {
     int row, col;
     getCursorPosition(&row, &col);
-    moveTo(ws.ws_row, 0);
+    moveTo(ws.ws_row - 1, 0);
+    clearScreenToBottom();
     va_list args;
     va_start(args, fmt);
     vprintf(fmt, args);
@@ -53,7 +42,7 @@ int insert(struct text_buf *buf, char *str, size_t maxstrlen) {
     if (buf == 0) {
         return -1;
     }
-    int len = snstrlen(str, maxstrlen);
+    int len = str_len(str, maxstrlen);
     if (len >= buf->back - buf->cursor) {
         // grow buffer
         return -1;
@@ -173,8 +162,12 @@ int main(int argc, char **argv) {
     }
     for(;;) {
         draw_pane();
-        show_status("astatus %d", 99);
+        show_status("Pane drawn");
         edit();
+        getchar();
+        show_status("");
+        moveTo(ws.ws_row, 0);
+        clearLine();
         break;
     }
 }

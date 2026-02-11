@@ -149,26 +149,39 @@ int setup_display() {
 } 
 
 int edit() {
+    getchar();
     return 0;
 }
 
+FILE logfile;
+
+#define LOG(fmt, ...) fprintf(logfile, fmt, __VA_ARGS__)
+
 int main(int argc, char **argv) {
+    int ret;
+    logfile = fopen("medlog", "w+");
+    if(logfile == 0) {
+        printf("couldn't open medlog for write");
+        return -1;
+    }
     if(setup_display() == -1) {
+        log("Couldn't set up display", LOG_ERR, LOG_STATUS);
         return -1;
     }
     show_status("starting");
-    if(argc > 0){
-        open_buf(&main_buf, main_file_name, main_file);
+    if(argc > 1){
+        ret = open_buf(&main_buf, main_file_name, main_file);
+    } 
+    if(argc == 1 || ret != 0) {
+        init_buf(&main_buf, 100000);
     }
     for(;;) {
         draw_pane();
-        show_status("Pane drawn");
-        edit();
-        getchar();
-        show_status("");
-        moveTo(ws.ws_row, 0);
-        clearLine();
-        restoreConsole();
-        break;
+        if(edit() != 0) {
+            break;
+        }
     }
+    moveTo(ws.ws_row, 0);
+    clearLine();
+    restoreConsole();
 }

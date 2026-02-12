@@ -1,6 +1,7 @@
 .cache/
-iv
+med
 compile_commands.json
 ansi/
 build*/
+tmp/
 

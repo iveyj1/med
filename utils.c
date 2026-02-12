@@ -1,9 +1,12 @@
 #include <stddef.h>
 #include <string.h>
+#include <stdio.h>
 #include <utils.h>
+#include <assert.h>
+#include <stdio.h>
+#include "utils.h"
 
-size_t str_copy_n(char *dst, size_t dstsz, const char *src)
-{
+size_t str_copy_n(char *dst, size_t dstsz, const char *src) {
     size_t srclen = strlen(src);
 
     if (dstsz == 0)
@@ -16,8 +19,7 @@ size_t str_copy_n(char *dst, size_t dstsz, const char *src)
 
     return srclen;
 }
-size_t str_cat_n(char *dst, size_t dstsz, const char *src)
-{
+size_t str_cat_n(char *dst, size_t dstsz, const char *src) {
     size_t dstlen = strlen(dst);
     size_t srclen = strlen(src);
 
@@ -25,7 +27,7 @@ size_t str_cat_n(char *dst, size_t dstsz, const char *src)
         return dstlen + srclen;
 
     size_t avail = dstsz - dstlen - 1;
-    size_t n = (srclen < avail) ? srclen : avail;
+    size_t n     = (srclen < avail) ? srclen : avail;
 
     memcpy(dst + dstlen, src, n);
     dst[dstlen + n] = '\0';
@@ -46,3 +48,14 @@ int str_len(const char *str, int buflen) {
     return (i);
 }
 
+size_t get_file_size(FILE *file) {
+    if (file == 0) {
+        return (-1);
+    }
+    size_t size, pos;
+    pos = ftell(file);
+    fseek(file, 0, SEEK_END);
+    size = ftell(file);
+    fseek(file, pos, SEEK_SET);
+    return (size);
+}

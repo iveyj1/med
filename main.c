@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "ansi_escapes.h"
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <stdarg.h>
@@ -8,6 +7,12 @@
 #include <stdbool.h>
 #include <assert.h>
 #include "utils.h"
+#include "disp.h"
+
+FILE *logfile;
+FILE *main_file            = 0;
+char  main_file_name[1024] = "";
+enum mode { NORMAL, INSERT, COMMAND };
 
 struct text_buf {
     char  *gap_buf;
@@ -20,42 +25,88 @@ struct text_buf {
 
 struct text_buf main_buf = {0, 0, 0, 0, 0};
 
-FILE *main_file            = 0;
-char  main_file_name[1024] = "";
-enum mode { NORMAL, INSERT, COMMAND };
-struct winsize ws = {0, 0};
+int buf_chars(struct text_buf *buf) { return buf->cursor + buf->gap_buf_len - buf->back; }
 
-int show_status(const char *fmt, ...) {
-    int row, col;
-    getCursorPosition(&row, &col);
-    moveTo(ws.ws_row - 1, 0);
-    clearScreenToBottom();
-    va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
-    moveTo(row, col);
-    return (0);
-}
-
-int insert(struct text_buf *buf, char *str, size_t maxstrlen) {
-    if (buf == 0) {
-        return -1;
-    }
-    int len = str_len(str, maxstrlen);
+int buf_resize(struct text_buf *buf, size_t len) {
     if (len >= buf->back - buf->cursor) {
-        // grow buffer
-        return -1;
     }
-    memcpy(buf->gap_buf + buf->cursor, str, len);
-    buf->cursor += len;
     return 0;
 }
 
+int buf_init(struct text_buf *buf, int text_size) {
+    assert(buf != 0);
+    assert(buf->gap_buf == 0);
+    buf->target_gap_len                = 1000;
+    buf->gap_buf_len                   = text_size + buf->target_gap_len;
+    buf->gap_buf                       = calloc(buf->gap_buf_len, sizeof(char));
+    buf->cursor                        = 0;
+    buf->back                          = buf->gap_buf_len - 1;
+    buf->dirty                         = false;
+    buf->gap_buf[0]                    = '\0';
+    buf->gap_buf[buf->gap_buf_len - 1] = '\0';
+    return 0;
+}
+
+int buf_status(struct text_buf *buf) {
+    LOG(logfile,
+        "Buffer status:\n\
+ gap_buf %p\n\
+ gap_buf_len %lu\n\
+ target gap len %d\n\
+ back %d\n\
+ cursor %d\n\
+ dirty %d\n\
+ actual_gap %d\n\
+ chars %d\n",
+        (void *)buf->gap_buf, buf->gap_buf_len, buf->target_gap_len, buf->back, buf->cursor,
+        buf->dirty, buf->back - buf->cursor, buf_chars(buf));
+    char *start_of_back_buffer = buf->gap_buf + buf->back;
+    LOG(logfile, "Front:\n%s\nBack:\n%s\n", buf->gap_buf, start_of_back_buffer);
+    return 0;
+}
+
+int buf_dump(struct text_buf *buf) {
+    for (int i = 0; i < buf->gap_buf_len; i++) {
+        if (i % 15 == 0 && i != 0) {
+            fprintf(logfile, "\n");
+        }
+        fprintf(logfile, "%02x ", buf->gap_buf[i]);
+    }
+    fprintf(logfile, "\n");
+    return 0;
+}
+
+int buf_insert(struct text_buf *buf, const char *str, size_t maxstrlen) {
+    assert(buf != 0);
+    int len = str_len(str, maxstrlen);
+    buf_resize(buf, len);
+    memcpy(buf->gap_buf + buf->cursor, str, len);
+    buf->cursor += len;
+    buf->gap_buf[buf->cursor] = '\0';
+    return 0;
+}
+
+int buf_seek(struct text_buf *buf, int pos) {
+    assert(buf != 0);
+    int chars = buf_chars(buf);
+    assert(pos < chars && pos >= 0);
+    int move = pos - buf->cursor;
+    assert(move < 0);
+    if (move < 0) {
+        char *src  = buf->gap_buf + pos;
+        char *dest = buf->gap_buf + buf->back + move;
+        int   num  = -1 * move;
+        memcpy(dest, src, num);
+        buf->cursor = pos;
+        buf->back += move;
+        buf->gap_buf[buf->cursor]          = '\0';
+        buf->gap_buf[buf->gap_buf_len - 1] = '\0';
+    }
+}
 // fills a buffer with one line from the text buffer starting from startindex
-int buffer_getline(struct text_buf *buf, int startindex, char *line, int linebuflen) {
+int buf_getline(struct text_buf *buf, int startindex, char *line, int linebuflen) {
     if (buf == 0) {
-        show_status("no buffer in buffer_getline");
+        show_status("No buffer in buffer_getline");
         return -1;
     }
     int i;
@@ -72,118 +123,54 @@ int buffer_getline(struct text_buf *buf, int startindex, char *line, int linebuf
     return i;
 }
 
-int viewport_top_line;
-
-int draw_pane() {
-    clearScreen();
-    moveTo((int)ws.ws_row / 2, (int)ws.ws_col / 2);
-    printf("Speed Racer");
-    return 0;
-}
-
-size_t get_file_size(FILE *file) {
-    if (file == 0) {
-        show_status("no file in get_file_size");
-        return (-1);
-    }
-    size_t size, pos;
-    pos = ftell(file);
-    fseek(file, 0, SEEK_END);
-    size = ftell(file);
-    fseek(file, pos, SEEK_SET);
-    return (size);
-}
-
-int init_buf(struct text_buf *buf, int text_size) { 
-    if(buf == 0) {
-        show_status("no buffer in init_buf");
-        return -1;
-    }
-    if(buf->gap_buf != 0) {
-        show_status("Error: buf has non-zero buffer pointer in init_buf");
-        return -1;
-    }
-    buf->target_gap_len = 65536;
-    buf->gap_buf_len = text_size + buf->target_gap_len;
-    buf->gap_buf = calloc(buf->gap_buf_len, sizeof(char));
-    buf->cursor = 0;
-    buf->back = buf->gap_buf_len - 1;
-    buf->dirty = false;
-    return 0; 
-}
-
-int open_buf(struct text_buf *buf, const char *filename, FILE *file) { 
-    size_t size; 
-    if(buf == 0) {
-        show_status("open_buf: no buffer");
-        return -1;
-    }
-    if(strlen(filename) > 0) {
+int buf_open(struct text_buf *buf, const char *filename, FILE *file) {
+    size_t size = 65536;
+    assert(buf != 0);
+    if (strlen(filename) > 0) {
         file = fopen(filename, "rw+");
-        if(file == 0) {
-            show_status("open_buf: can't open %s", filename);
+        if (file == 0) {
+            show_status("buf_open: can't open %s", filename);
             return -1;
         }
         size = get_file_size(file);
-    } else {
-        size = 65536;
     }
-    if(init_buf(&main_buf, size) < 0) {
-        show_status("open_buf: could not initialize buffer");
-        return -1;
-    }
-
-#ifdef ASSERTIONS 
+    assert(buf_init(buf, size) >= 0);
     assert(size == buf->cursor + buf->gap_buf_len - buf->back);
-#endif
-    return size; 
+    return size;
 }
-
-int setup_display() {
-    setupConsole();
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1) {
-        printf("Error getting screen size");
-        return -1;
-    }
-    return 0;
-} 
 
 int edit() {
     getchar();
     return 0;
 }
 
-FILE *logfile;
-
-// ## token pasting operator removes the comma if __VA_ARGS__ is empty, preventing trailing comma syntax errors
-// Use __VA_OPT__ for C23 or later 
-#define LOG(fmt, ...) fprintf(logfile, fmt, ##__VA_ARGS__)
-
 int main(int argc, char **argv) {
     int err;
-    logfile = fopen("medlog", "w+");
-    if(logfile == 0) {
-        printf("couldn't open medlog for write");
-        return -1;
+    assert((logfile = fopen("medlog", "w+")) != 0);
+    fprintf(logfile, "Starting log\n");
+    assert(setup_display() >= 0);
+    show_status("Starting");
+    LOG(logfile, "At start\n");
+    buf_status(&main_buf);
+    if (argc > 1) {
+        err = buf_open(&main_buf, main_file_name, main_file);
     }
-    if(setup_display() == -1) {
-        LOG("Couldn't set up display");
-        return -1;
+    if (argc == 1 || err) {
+        buf_init(&main_buf, 1000);
     }
-    show_status("starting");
-    if(argc > 1){
-        err = open_buf(&main_buf, main_file_name, main_file);
-    } 
-    if(argc == 1 || err ) {
-        init_buf(&main_buf, 100000);
-    }
-    for(;;) {
-        draw_pane();
-        if(edit() != 0) {
-            break;
-        }
-    }
-    moveTo(ws.ws_row, 0);
-    clearLine();
-    restoreConsole();
+    LOG(logfile, "After buf_init\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    const char speed[] = "Speed Racer";
+    buf_insert(&main_buf, speed, sizeof(speed));
+    LOG(logfile, "After insert\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    buf_seek(&main_buf, 5);
+    LOG(logfile, "After seek\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    draw_pane();
+    edit();
+    cleanup_display();
 }

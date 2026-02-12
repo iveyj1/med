@@ -1,0 +1,65 @@
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="."
+DRY_RUN=1
+
+# --- parse arguments ---
+for arg in "$@"; do
+    case "$arg" in
+        --modify)
+            DRY_RUN=0
+            ;;
+        *)
+            ROOT_DIR="$arg"
+            ;;
+    esac
+done
+
+command -v clang-format >/dev/null 2>&1 || {
+    echo "clang-format not found in PATH" >&2
+    exit 1
+}
+
+# --- find .clang-format by walking upward ---
+DIR="$(realpath "$ROOT_DIR")"
+while true; do
+    if [ -f "$DIR/.clang-format" ]; then
+        echo "Using config: $DIR/.clang-format"
+        break
+    fi
+
+    if [ "$DIR" = "/" ]; then
+        echo "Error: no .clang-format found in $ROOT_DIR or any parent directory." >&2
+        exit 1
+    fi
+
+    DIR="$(dirname "$DIR")"
+done
+# --------------------------------------------
+
+# Build list of target files
+mapfile -d '' FILES < <(
+    find "$ROOT_DIR" \
+        \( -name '*.c' -o -name '*.h' \) \
+        -not -path '*/build*/*' \
+        -not -path '*/.git/*' \
+        -not -path '*/.venv/*' \
+        -print0
+)
+
+if [ "${#FILES[@]}" -eq 0 ]; then
+    echo "No .c or .h files found under $ROOT_DIR"
+    exit 0
+fi
+
+if [ $DRY_RUN -eq 1 ]; then
+    echo "Dry run: the following files would be formatted:"
+    printf '%s\n' "${FILES[@]}"
+    scrname=$(basename $0)
+    printf "Use:\n${scrname} --modify\nto change all files"
+else
+    echo "Modifying files"
+    printf '%s\0' "${FILES[@]}" | xargs -0 clang-format -i -style=file
+fi

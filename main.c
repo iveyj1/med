@@ -36,7 +36,7 @@ int buf_resize(struct text_buf *buf, size_t len) {
 int buf_init(struct text_buf *buf, int text_size) {
     assert(buf != 0);
     assert(buf->gap_buf == 0);
-    buf->target_gap_len                = 1000;
+    buf->target_gap_len                = 256;
     buf->gap_buf_len                   = text_size + buf->target_gap_len;
     buf->gap_buf                       = calloc(buf->gap_buf_len, sizeof(char));
     buf->cursor                        = 0;
@@ -67,10 +67,10 @@ int buf_status(struct text_buf *buf) {
 
 int buf_dump(struct text_buf *buf) {
     for (int i = 0; i < buf->gap_buf_len; i++) {
-        if (i % 15 == 0 && i != 0) {
+        if (i % 32 == 0 && i != 0) {
             fprintf(logfile, "\n");
         }
-        fprintf(logfile, "%02x ", buf->gap_buf[i]);
+        fprintf(logfile, "%02x ", (unsigned char)buf->gap_buf[i]);
     }
     fprintf(logfile, "\n");
     return 0;
@@ -91,17 +91,23 @@ int buf_seek(struct text_buf *buf, int pos) {
     int chars = buf_chars(buf);
     assert(pos < chars && pos >= 0);
     int move = pos - buf->cursor;
-    assert(move < 0);
     if (move < 0) {
         char *src  = buf->gap_buf + pos;
         char *dest = buf->gap_buf + buf->back + move;
         int   num  = -1 * move;
         memcpy(dest, src, num);
-        buf->cursor = pos;
-        buf->back += move;
-        buf->gap_buf[buf->cursor]          = '\0';
-        buf->gap_buf[buf->gap_buf_len - 1] = '\0';
+        memset(src, 0xff, num);
+    } else if (move > 0) {
+        char *src  = buf->gap_buf + buf->back;
+        char *dest = buf->gap_buf + buf->cursor;
+        int   num  = move;
+        memcpy(dest, src, num);
+        memset(src, 0xff, num);
     }
+    buf->cursor = pos;
+    buf->back += move;
+    buf->gap_buf[buf->cursor]          = '\0';
+    buf->gap_buf[buf->gap_buf_len - 1] = '\0';
 }
 // fills a buffer with one line from the text buffer starting from startindex
 int buf_getline(struct text_buf *buf, int startindex, char *line, int linebuflen) {
@@ -156,7 +162,7 @@ int main(int argc, char **argv) {
         err = buf_open(&main_buf, main_file_name, main_file);
     }
     if (argc == 1 || err) {
-        buf_init(&main_buf, 1000);
+        buf_init(&main_buf, 256);
     }
     LOG(logfile, "After buf_init\n");
     buf_status(&main_buf);
@@ -167,7 +173,11 @@ int main(int argc, char **argv) {
     buf_status(&main_buf);
     buf_dump(&main_buf);
     buf_seek(&main_buf, 5);
-    LOG(logfile, "After seek\n");
+    LOG(logfile, "After seek to 5\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    buf_seek(&main_buf, 8);
+    LOG(logfile, "After seek to 8\n");
     buf_status(&main_buf);
     buf_dump(&main_buf);
     draw_pane();

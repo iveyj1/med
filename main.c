@@ -78,7 +78,7 @@ int buf_dump(struct text_buf *buf) {
     return 0;
 }
 
-int buf_insert(struct text_buf *buf, const char *str, size_t maxstrlen) {
+int buf_append(struct text_buf *buf, const char *str, size_t maxstrlen) {
     assert(buf != 0);
     assert(strlen(str) <= buf_gap_len(buf));
     int len = str_len(str, maxstrlen);
@@ -99,14 +99,15 @@ int buf_seek(struct text_buf *buf, int pos) {
         src  = buf->gap_buf + pos + 1;
         dest = buf->gap_buf + buf->back + move;
         memcpy(dest, src, abs(move));
+        memset(src, 0xff, abs(move) + 1);
     } else if (move > 0) {
         src  = buf->gap_buf + buf->back;
         dest = buf->gap_buf + buf->cursor + 1;
         memcpy(dest, src, move);
+        memset(src, 0xff, abs(move));
     }
     buf->cursor = pos;
     buf->back += move;
-    memset(src, 0xff, abs(move));
     buf->gap_buf[buf->cursor + 1]      = '\0';
     buf->gap_buf[buf->gap_buf_len - 1] = '\0';
     return 0;
@@ -171,8 +172,8 @@ int main(int argc, char **argv) {
     buf_status(&main_buf);
     buf_dump(&main_buf);
     const char speed[] = "Speed Racer";
-    buf_insert(&main_buf, speed, sizeof(speed));
-    LOG(logfile, "After insert\n");
+    buf_append(&main_buf, speed, sizeof(speed));
+    LOG(logfile, "After append\n");
     buf_status(&main_buf);
     buf_dump(&main_buf);
     buf_seek(&main_buf, 5);
@@ -181,6 +182,26 @@ int main(int argc, char **argv) {
     buf_dump(&main_buf);
     buf_seek(&main_buf, 8);
     LOG(logfile, "After seek to 8\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    buf_seek(&main_buf, 0);
+    LOG(logfile, "After seek to 0\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    buf_seek(&main_buf, 6);
+    LOG(logfile, "After seek to 6\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    buf_append(&main_buf, "append", sizeof("append"));
+    LOG(logfile, "After append\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    buf_seek(&main_buf, 0);
+    LOG(logfile, "After seek to 0\n");
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    buf_append(&main_buf, "append", sizeof("append"));
+    LOG(logfile, "After append\n");
     buf_status(&main_buf);
     buf_dump(&main_buf);
     draw_pane();

@@ -28,6 +28,10 @@ while [[ $# -gt 0 ]]; do
             STRIP=true
             shift
             ;;
+        --clang)
+            export CC=clang
+            shift
+            ;;
         *)
             echo "Invalid option $1"
             exit 1

@@ -12,6 +12,7 @@ add_executable(med
     ansi_escapes.c
     utils.c
     disp.c
+    buf.c
 )
 
 target_include_directories(med PRIVATE

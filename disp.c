@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include "ansi_escapes.h"
+#include "buf.h"
 #include "disp.h"
 
 struct winsize ws = {0, 0};
@@ -38,9 +39,26 @@ int cleanup_display() {
     return 0;
 }
 
-int draw_pane() {
+int draw_pane(struct text_buf *buf) {
     clearScreen();
-    moveTo((int)ws.ws_row / 2, (int)ws.ws_col / 2);
-    printf("Speed Racer");
+    fflush(NULL);
+    moveTo(0, 0);
+    fflush(NULL);
+    int  line = 0;
+    char c;
+    for (int i = 0; i < buf_chars(buf); i++) {
+        c = buf_get_char(buf, i);
+        if (c != '\n') {
+            putchar(c);
+            fflush(NULL);
+        } else {
+            line++;
+            if (line >= ws.ws_row) {
+                break;
+            }
+            moveTo(line, 0);
+            fflush(NULL);
+        }
+    }
     return 0;
 }

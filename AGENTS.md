@@ -9,11 +9,8 @@ Guidance for agentic coding assistants working in this repository.
 
 ## Repository Snapshot (Important)
 - Build system: CMake (`CMakeLists.txt`).
-- Current CMake source collection is recursive: `file(GLOB_RECURSE sources "*.c")`.
-- That glob currently includes `ansi/*.c` and generated files under `build/`.
-- Result: CMake default link step fails with multiple `main` definitions.
-- Reliable workaround for now: compile targets directly with `gcc` commands below.
-- `ansi/` is a nested sample/copy project and has its own `.git` directory.
+- CMake uses explicit file list in `add_executable()` (no glob).
+- `ansi/` is a nested sample/copy project with its own `.git` directory.
 - Avoid editing generated/cache paths (`build/`, `.cache/`) unless explicitly asked.
 
 ## Cursor / Copilot Rules
@@ -33,14 +30,14 @@ Guidance for agentic coding assistants working in this repository.
 Build the main executable directly:
 ```bash
 mkdir -p build
-gcc -Wall -Wextra -Wpedantic -std=c11 main.c ansi_escapes.c -I. -o build/iv
+gcc -Wall -Wextra -Wpedantic -std=c11 main.c ansi_escapes.c utils.c disp.c buf.c -I. -o build/med
 ```
 Run:
 ```bash
-./build/iv
+./build/med
 ```
 
-### Build (CMake, currently broken)
+### Build (CMake)
 Configure:
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
@@ -49,7 +46,6 @@ Build:
 ```bash
 cmake --build build
 ```
-Known issue: recursive globbing pulls test/sample/generated `.c` files.
 
 ### Clean
 Use script:
@@ -152,7 +148,7 @@ ctest --test-dir build -R "^test_name$" --output-on-failure
 
 ### Testing Expectations for New Code
 - For new behavior, add or update at least one runnable verification path.
-- Prefer CTest registration once CMake source selection is fixed.
+- Prefer CTest registration.
 - Use descriptive test names so `ctest -R` remains usable.
 - If automated tests are absent, document manual verification commands.
 
@@ -160,6 +156,6 @@ ctest --test-dir build -R "^test_name$" --output-on-failure
 - Read relevant files first; follow local patterns.
 - Make the smallest change that fully solves the task.
 - Run relevant build/lint/test commands after edits.
-- Prefer direct `gcc` compile checks until CMake globbing is fixed.
+- Prefer direct `gcc` compile checks.
 - In final notes, list exact commands run and outcomes.
 - If a command cannot run, explain why and provide the exact fallback command.

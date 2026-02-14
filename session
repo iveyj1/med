@@ -1,0 +1,11 @@
+let SessionLoad = 1
+badd +3 disp.c
+badd +4 disp.h
+badd +1 main.c
+badd +1 utils.c
+badd +1 utils.h
+badd +1 buf.c
+badd +0 buf.h
+doautoall SessionLoadPost
+unlet SessionLoad
+" vim: set ft=vim :

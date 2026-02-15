@@ -7,12 +7,19 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+
 add_executable(med
     main.c
     ansi_escapes.c
     utils.c
     disp.c
     buf.c
+)
+
+target_compile_options(med PRIVATE
+    $<$<CONFIG:Debug>:-g>
+    $<$<CONFIG:Debug>:-O0>
+    $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
 )
 
 target_include_directories(med PRIVATE

@@ -12,34 +12,34 @@
 int buf_chars(struct text_buf *buf) { return buf->cursor + buf->gap_buf_len - buf->back; }
 int buf_gap_len(struct text_buf *buf) { return (buf->back - buf->cursor - 2); }
 
+int buf_check(struct text_buf *buf) {
+    assert(buf->gap_buf != 0);
+    assert(buf->gap_buf_len > 0);
+    assert(buf->cursor >= -1);
+    assert(buf->gap_buf[buf->cursor + 1] == 0);
+    assert(buf->back > buf->cursor + 1);
+    assert(buf->back <= buf->gap_buf_len);
+    assert(buf->gap_buf[buf->gap_buf_len - 1] == 0);
+    assert(buf->target_gap_len > 0);
+    return 0;
+}
+
 int buf_resize(struct text_buf *buf, size_t len) {
     // if (len >= buf->back - buf->cursor) {
     // }
     return 0;
 }
 
-int buf_init(struct text_buf *buf, int text_size) {
-    assert(buf != 0);
-    assert(buf->gap_buf == 0);
-    buf->target_gap_len = 256;
-    buf->gap_buf_len    = text_size + buf->target_gap_len;
-    buf->gap_buf        = calloc(buf->gap_buf_len, sizeof(char));
-    memset(buf->gap_buf, 0xff, buf->gap_buf_len);
-    buf->cursor                        = -1;
-    buf->back                          = buf->gap_buf_len - 1;
-    buf->dirty                         = false;
-    buf->gap_buf[0]                    = '\0';
-    buf->gap_buf[buf->gap_buf_len - 1] = '\0';
-    return 0;
-}
-
-int buf_get_char(struct text_buf *buf, int index) {
-    assert(index < buf_chars(buf));
-    if (index <= buf->cursor) {
-        return (buf->gap_buf[index]);
-    } else {
-        return (buf->gap_buf[index + buf->back - buf->cursor]);
+int buf_dump(struct text_buf *buf) {
+    for (int i = 0; i < buf->gap_buf_len; i++) {
+        if (i % 32 == 0 && i != 0) {
+            fprintf(logfile, "\n");
+        }
+        fprintf(logfile, "%02x ", (unsigned char)buf->gap_buf[i]);
     }
+    fprintf(logfile, "\n");
+    fflush(NULL);
+    return 0;
 }
 
 int buf_status(struct text_buf *buf) {
@@ -55,37 +55,58 @@ int buf_status(struct text_buf *buf) {
  chars %d\n",
         (void *)buf->gap_buf, buf->gap_buf_len, buf->target_gap_len, buf->back, buf->cursor,
         buf->dirty, buf_gap_len(buf), buf_chars(buf));
-    char *start_of_back_buffer = buf->gap_buf + buf->back;
-    LOG(logfile, "Front:\n%s\nBack:\n%s\n", buf->gap_buf, start_of_back_buffer);
+    LOG(logfile, "Front:\n%s\nBack:\n%s\n", buf->gap_buf, buf->gap_buf + buf->back);
     return 0;
 }
 
-int buf_dump(struct text_buf *buf) {
-    for (int i = 0; i < buf->gap_buf_len; i++) {
-        if (i % 32 == 0 && i != 0) {
-            fprintf(logfile, "\n");
-        }
-        fprintf(logfile, "%02x ", (unsigned char)buf->gap_buf[i]);
-    }
-    fprintf(logfile, "\n");
+int buf_init(struct text_buf *buf, int text_size) {
+    assert(buf != 0);
+    assert(buf->gap_buf == 0);
+    buf->target_gap_len = 256;
+    buf->gap_buf_len    = text_size + buf->target_gap_len;
+    buf->gap_buf        = calloc(buf->gap_buf_len, sizeof(char));
+    memset(buf->gap_buf, 0xff, buf->gap_buf_len);
+    buf->cursor                        = -1;
+    buf->back                          = buf->gap_buf_len - 1;
+    buf->dirty                         = false;
+    buf->gap_buf[0]                    = '\0';
+    buf->gap_buf[buf->gap_buf_len - 1] = '\0';
+    buf_status(buf);
+    buf_dump(buf);
+    buf_check(buf);
     return 0;
+}
+
+int buf_get_char(struct text_buf *buf, int index) {
+    char c;
+    assert(index < buf_chars(buf));
+    if (index <= buf->cursor) {
+        c = buf->gap_buf[index];
+        LOG(logfile, "buf_get_char index in front %d %c %x\n", index, c, c);
+    } else {
+        c = buf->gap_buf[index - buf->cursor + buf->back - 1];
+        LOG(logfile, "buf_get_char index in back %d %c %x\n", index, c, c);
+    }
+    return c;
 }
 
 int buf_append(struct text_buf *buf, const char *str, size_t maxstrlen) {
-    assert(buf != 0);
+    buf_check(buf);
     assert(strlen(str) <= buf_gap_len(buf));
     int len = str_len(str, maxstrlen);
     buf_resize(buf, len);
     memcpy(buf->gap_buf + buf->cursor + 1, str, len);
     buf->cursor += len;
     buf->gap_buf[buf->cursor + 1] = '\0';
+    buf->dirty                    = true;
+    buf_check(buf);
     return 0;
 }
 
 int buf_seek(struct text_buf *buf, int pos) {
-    assert(buf != 0);
+    buf_check(buf);
     int chars = buf_chars(buf);
-    assert(pos < chars && pos >= 0);
+    assert(pos < chars && pos >= -1);
     int   move = pos - buf->cursor;
     char *dest, *src;
     if (move < 0) {
@@ -103,6 +124,7 @@ int buf_seek(struct text_buf *buf, int pos) {
     buf->back += move;
     buf->gap_buf[buf->cursor + 1]      = '\0';
     buf->gap_buf[buf->gap_buf_len - 1] = '\0';
+    buf_check(buf);
     return 0;
 }
 // // fills a buffer with one line from the text buffer starting from startindex

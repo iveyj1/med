@@ -12,67 +12,91 @@ FILE *logfile;
 FILE *main_file            = 0;
 char  main_file_name[1024] = "";
 enum mode { NORMAL, INSERT, COMMAND };
-struct text_buf main_buf = {0, 0, -1, 0, 0, 0};
+struct text_buf main_buf = {0, 0, -1, 0, 0, 0, {0}, 0};
 
 int edit() {
     getchar();
     return 0;
 }
 
+// #define TEST_PAUSE_ENABLE
+#define TEST_FLUSH_ENABLE
+
+#ifdef TEST_PAUSE_ENABLE
+#define TEST_PAUSE() getchar()
+#else
+#define TEST_PAUSE()
+#endif
+
+#ifdef TEST_FLUSH_ENABLE
+#define TEST_FLUSH() fflush(NULL)
+#else
+#define TEST_FLUSH()
+#endif
+
+int buf_test_seek(int a) {
+    buf_seek(&main_buf, a);
+    LOG(logfile, "After seek to %d\n", a);
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    draw_pane(&main_buf);
+    TEST_FLUSH();
+    TEST_PAUSE();
+    return 0;
+}
+
+int buf_test_append(const char *a, size_t size) {
+    buf_append(&main_buf, a, size);
+    LOG(logfile, "After append of %s\n", (a));
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    draw_pane(&main_buf);
+    TEST_FLUSH();
+    TEST_PAUSE();
+    return 0;
+}
+
+int buf_test(const char *a) {
+    LOG(logfile, "After %s\n", a);
+    buf_status(&main_buf);
+    buf_dump(&main_buf);
+    draw_pane(&main_buf);
+    TEST_FLUSH();
+    TEST_PAUSE();
+    return 0;
+}
+
 int main(int argc, char **argv) {
     printf("starting med\n");
     fflush(NULL);
-    getchar();
+    // getchar();
     int err;
     assert((logfile = fopen("medlog", "w+")) != 0);
     fprintf(logfile, "Starting log\n");
     assert(setup_display() >= 0);
     show_status("Starting");
-    LOG(logfile, "At start\n");
-    buf_status(&main_buf);
+    // LOG(logfile, "At start\n");
+    // buf_status(&main_buf);
     // if (argc > 1) {
     //     err = buf_open(&main_buf, main_file_name, main_file);
     // }
-    if (argc == 1 || err) {
-        buf_init(&main_buf, 256);
-    }
-    LOG(logfile, "After buf_init\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
+    // if (argc == 1 || err) {
+    //     buf_init(&main_buf, 256);
+    // }
     const char speed[] = "Speed Racer";
+    buf_init(&main_buf, 256);
     buf_append(&main_buf, speed, sizeof(speed));
-    LOG(logfile, "After append\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
-    buf_seek(&main_buf, 5);
-    LOG(logfile, "After seek to 5\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
-    buf_seek(&main_buf, 8);
-    LOG(logfile, "After seek to 8\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
-    buf_seek(&main_buf, 0);
-    LOG(logfile, "After seek to 0\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
+    buf_test("buf append");
+    draw_pane(&main_buf);
     buf_seek(&main_buf, 6);
-    LOG(logfile, "After seek to 6\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
-    buf_append(&main_buf, "append", sizeof("append"));
-    LOG(logfile, "After append\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
-    buf_seek(&main_buf, 0);
-    LOG(logfile, "After seek to 0\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
-    buf_append(&main_buf, "append", sizeof("append"));
-    LOG(logfile, "After append\n");
-    buf_status(&main_buf);
-    buf_dump(&main_buf);
+    buf_test("buf seek");
+    draw_pane(&main_buf);
+    getchar();
+    const char asdf[] = ".....";
+    buf_append(&main_buf, speed, sizeof(speed));
+    buf_test("buf append");
     draw_pane(&main_buf);
     edit();
     cleanup_display();
+    return 0;
 }

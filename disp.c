@@ -7,6 +7,7 @@
 #include "ansi_escapes.h"
 #include "buf.h"
 #include "disp.h"
+#include "utils.h"
 
 struct winsize ws = {0, 0};
 
@@ -48,6 +49,7 @@ int draw_pane(struct text_buf *buf) {
     char c;
     for (int i = 0; i < buf_chars(buf); i++) {
         c = buf_get_char(buf, i);
+        // LOG(logfile, "in draw_pane: index %d  char %c %x\n", i, c, c);
         if (c != '\n') {
             putchar(c);
             fflush(NULL);

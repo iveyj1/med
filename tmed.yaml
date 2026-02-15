@@ -1,0 +1,40 @@
+session_name: med
+
+shell_command_before:
+    - source "$HOME/.local/bin/pyenv/bin/activate"
+    - cd "$HOME/dev/med"
+
+windows:
+    - window_name: nvim_opencode
+      layout: main-vertical
+      panes:
+        - shell_command:
+            - nvim
+        - shell_command:
+            - opencode
+        - shell_command:
+            - 
+      # shell_command_after:
+      #   - tmux select-pane -t 0
+      #   - tmux resize-pane -R 50
+
+    - window_name: bash_ranger
+      layout: even-horizontal
+      panes:
+          - shell_command:
+              - 
+          - shell_command:
+              - ranger
+
+    - window_name: debug
+      layout: main-vertical
+      panes:
+          - shell_command:
+              - gdb -tui ./build/med
+          - shell_command:
+              - nvim -S session
+          - shell_command:
+              - tty
+          - shell_command:
+              - tail -f medlog
+

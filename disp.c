@@ -45,7 +45,7 @@ int draw_pane(struct text_buf *buf) {
     fflush(NULL);
     moveTo(0, 0);
     fflush(NULL);
-    int  line = 0;
+    int  line = 1;
     char c;
     for (int i = 0; i < buf_chars(buf); i++) {
         c = buf_get_char(buf, i);
@@ -56,8 +56,10 @@ int draw_pane(struct text_buf *buf) {
         } else {
             line++;
             if (line >= ws.ws_row) {
+                LOG(logfile, "end of pane reached\n");
                 break;
             }
+            LOG(logfile, "newline, moving to left of line %d\n", line);
             moveTo(line, 0);
             fflush(NULL);
         }

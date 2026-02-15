@@ -3,14 +3,16 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <assert.h>
+// #include <assert.h>
 #include "utils.h"
 #include "disp.h"
 #include "buf.h"
 
+#define MAX_FILENAME_LEN 1024
+
 FILE *logfile;
-FILE *main_file            = 0;
-char  main_file_name[1024] = "";
+FILE *main_file                        = 0;
+char  main_file_name[MAX_FILENAME_LEN] = "";
 enum mode { NORMAL, INSERT, COMMAND };
 struct text_buf main_buf = {0, 0, -1, 0, 0, 0, {0}, 0};
 
@@ -66,28 +68,13 @@ int buf_test(const char *a) {
     return 0;
 }
 
-int main(int argc, char **argv) {
-    printf("starting med\n");
-    fflush(NULL);
-    // getchar();
-    int err;
-    assert((logfile = fopen("medlog", "w+")) != 0);
-    fprintf(logfile, "Starting log\n");
-    assert(setup_display() >= 0);
-    show_status("Starting");
-    // LOG(logfile, "At start\n");
-    // buf_status(&main_buf);
-    // if (argc > 1) {
-    //     err = buf_open(&main_buf, main_file_name, main_file);
-    // }
-    // if (argc == 1 || err) {
-    //     buf_init(&main_buf, 256);
-    // }
-    const char speed[] = "Speed Racer";
+int test() {
+    const char speed[] = "Speed Racer\n";
     buf_init(&main_buf, 256);
     buf_append(&main_buf, speed, sizeof(speed));
     buf_test("buf append");
     draw_pane(&main_buf);
+    getchar();
     buf_seek(&main_buf, 6);
     buf_test("buf seek");
     draw_pane(&main_buf);
@@ -96,6 +83,24 @@ int main(int argc, char **argv) {
     buf_append(&main_buf, speed, sizeof(speed));
     buf_test("buf append");
     draw_pane(&main_buf);
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    int err;
+    assert_bt((logfile = fopen("medlog", "w+")) != 0);
+    fprintf(logfile, "Starting log\n");
+    assert_bt(setup_display() >= 0);
+    show_status("Starting");
+    // buf_status(&main_buf);
+    if (argc > 1) {
+        str_copy_n(main_file_name, MAX_FILENAME_LEN, argv[1]);
+        show_status("Openiing %s", main_file_name);
+        err = buf_open(&main_buf, main_file_name, main_file);
+    }
+    if (argc == 1 || err) {
+        buf_init(&main_buf, 256);
+    }
     edit();
     cleanup_display();
     return 0;

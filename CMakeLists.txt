@@ -20,6 +20,8 @@ target_compile_options(med PRIVATE
     $<$<CONFIG:Debug>:-g>
     $<$<CONFIG:Debug>:-O0>
     $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+    $<$<CONFIG:Debug>:-funwind-tables>
+    $<$<CONFIG:Debug>:-rdynamic>
 )
 
 target_include_directories(med PRIVATE

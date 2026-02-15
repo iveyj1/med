@@ -8,19 +8,20 @@
 #include <stdbool.h>
 #include <assert.h>
 #include "utils.h"
+#include "disp.h"
 
 int buf_chars(struct text_buf *buf) { return buf->cursor + buf->gap_buf_len - buf->back; }
 int buf_gap_len(struct text_buf *buf) { return (buf->back - buf->cursor - 2); }
 
 int buf_check(struct text_buf *buf) {
-    assert(buf->gap_buf != 0);
-    assert(buf->gap_buf_len > 0);
-    assert(buf->cursor >= -1);
-    assert(buf->gap_buf[buf->cursor + 1] == 0);
-    assert(buf->back > buf->cursor + 1);
-    assert(buf->back <= buf->gap_buf_len);
-    assert(buf->gap_buf[buf->gap_buf_len - 1] == 0);
-    assert(buf->target_gap_len > 0);
+    assert_bt(buf->gap_buf != 0);
+    assert_bt(buf->gap_buf_len > 0);
+    assert_bt(buf->cursor >= -1);
+    assert_bt(buf->gap_buf[buf->cursor + 1] == 0);
+    assert_bt(buf->back > buf->cursor + 1);
+    assert_bt(buf->back <= buf->gap_buf_len);
+    assert_bt(buf->gap_buf[buf->gap_buf_len - 1] == 0);
+    assert_bt(buf->target_gap_len > 0);
     return 0;
 }
 
@@ -60,8 +61,8 @@ int buf_status(struct text_buf *buf) {
 }
 
 int buf_init(struct text_buf *buf, int text_size) {
-    assert(buf != 0);
-    assert(buf->gap_buf == 0);
+    assert_bt(buf != 0);
+    assert_bt(buf->gap_buf == 0);
     buf->target_gap_len = 256;
     buf->gap_buf_len    = text_size + buf->target_gap_len;
     buf->gap_buf        = calloc(buf->gap_buf_len, sizeof(char));
@@ -79,7 +80,7 @@ int buf_init(struct text_buf *buf, int text_size) {
 
 int buf_get_char(struct text_buf *buf, int index) {
     char c;
-    assert(index < buf_chars(buf));
+    assert_bt(index < buf_chars(buf));
     if (index <= buf->cursor) {
         c = buf->gap_buf[index];
         LOG(logfile, "buf_get_char index in front %d %c %x\n", index, c, c);
@@ -92,7 +93,7 @@ int buf_get_char(struct text_buf *buf, int index) {
 
 int buf_append(struct text_buf *buf, const char *str, size_t maxstrlen) {
     buf_check(buf);
-    assert(strlen(str) <= buf_gap_len(buf));
+    assert_bt(strlen(str) <= buf_gap_len(buf));
     int len = str_len(str, maxstrlen);
     buf_resize(buf, len);
     memcpy(buf->gap_buf + buf->cursor + 1, str, len);
@@ -106,7 +107,7 @@ int buf_append(struct text_buf *buf, const char *str, size_t maxstrlen) {
 int buf_seek(struct text_buf *buf, int pos) {
     buf_check(buf);
     int chars = buf_chars(buf);
-    assert(pos < chars && pos >= -1);
+    assert_bt(pos < chars && pos >= -1);
     int   move = pos - buf->cursor;
     char *dest, *src;
     if (move < 0) {
@@ -127,6 +128,7 @@ int buf_seek(struct text_buf *buf, int pos) {
     buf_check(buf);
     return 0;
 }
+
 // // fills a buffer with one line from the text buffer starting from startindex
 // int buf_getline(struct text_buf *buf, int startindex, char *line, int linebuflen) {
 //     if (buf == 0) {
@@ -147,20 +149,20 @@ int buf_seek(struct text_buf *buf, int pos) {
 //     line[i + 1] = '\0';
 //     return i;
 // }
-//
-// int buf_open(struct text_buf *buf, const char *filename, FILE *file) {
-//     size_t size = 65536;
-//     assert(buf != 0);
-//     if (strlen(filename) > 0) {
-//         file = fopen(filename, "rw+");
-//         if (file == 0) {
-//             show_status("buf_open: can't open %s", filename);
-//             return -1;
-//         }
-//         size = get_file_size(file);
-//     }
-//     assert(buf_init(buf, size) >= 0);
-//     assert(size == buf->cursor + buf->gap_buf_len - buf->back);
-//     return size;
-// }
-//
+
+int buf_open(struct text_buf *buf, const char *filename, FILE *file) {
+    size_t size = 65536;
+    assert_bt(buf != 0);
+    assert_bt(strlen(filename) > 0);
+    if (strlen(filename) > 0) {
+        file = fopen(filename, "rw+");
+        if (file == 0) {
+            show_status("buf_open: can't open %s", filename);
+            return -1;
+        }
+        size = get_file_size(file);
+    }
+    assert_bt(buf_init(buf, size) >= 0);
+    buf_check(buf);
+    return size;
+}

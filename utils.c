@@ -1,10 +1,22 @@
+#include "utils.h"
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include <utils.h>
 #include <assert.h>
 #include <stdio.h>
-#include "utils.h"
+#include <stdlib.h>
+
+#define BT_SIZE 32
+void __assert_fail_bt(const char *expr, const char *file, int line) {
+    fprintf(stderr, "Assertion failed: %s (%s:%d)\n", expr, file, line);
+    void *buf[BT_SIZE];
+    int   nptrs = backtrace(buf, BT_SIZE);
+    backtrace_symbols_fd(buf, nptrs, 2);
+    exit(1);
+}
+
+#define assert_bt(expr) ((expr) ? (void)0 : __assert_fail_bt(#expr, __FILE__, __LINE__))
 
 size_t str_copy_n(char *dst, size_t dstsz, const char *src) {
     size_t srclen = strlen(src);

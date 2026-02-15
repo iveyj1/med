@@ -24,7 +24,7 @@ int buf_dump(struct text_buf *buf);
 int buf_append(struct text_buf *buf, const char *str, size_t maxstrlen);
 int buf_seek(struct text_buf *buf, int pos);
 // int buf_getline(struct text_buf *buf, int startindex, char *line, int linebuflen);
-// int buf_open(struct text_buf *buf, const char *filename, FILE *file);
+int buf_open(struct text_buf *buf, const char *filename, FILE *file);
 int buf_get_char(struct text_buf *buf, int index);
-//
+
 #endif

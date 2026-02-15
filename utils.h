@@ -3,6 +3,12 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <execinfo.h>
+
+#define BT_SIZE 32
+void __assert_fail_bt(const char *expr, const char *file, int line);
+
+#define assert_bt(expr) ((expr) ? (void)0 : __assert_fail_bt(#expr, __FILE__, __LINE__))
 
 /**
  * @brief Concatenate two strings, correctly null-terminated concatenated
@@ -58,13 +64,13 @@ size_t get_file_size(FILE *file);
 
 extern FILE *logfile;
 
-#define CUSTOM_ASSERT(expr)                                                                 \
-    do {                                                                                    \
-        if (!(expr)) {                                                                      \
-            fprintf(stderr, "Assertion failed: %s, at %s:%d\n", #expr, __FILE__, __LINE__); \
-            LOG(logfile, "Assertion failed: %s, at %s:%d\n", #expr, __FILE__, __LINE__);    \
-            exit();                                                                         \
-        }                                                                                   \
-    } while (0)
-
-#endif
+// #define CUSTOM_ASSERT(expr)                                                                 \
+//     do {                                                                                    \
+//         if (!(expr)) {                                                                      \
+//             fprintf(stderr, "Assertion failed: %s, at %s:%d\n", #expr, __FILE__, __LINE__); \
+//             LOG(logfile, "Assertion failed: %s, at %s:%d\n", #expr, __FILE__, __LINE__);    \
+//             exit();                                                                         \
+//         }                                                                                   \
+//     } while (0)
+//
+// #endif

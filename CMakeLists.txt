@@ -21,10 +21,13 @@ target_compile_options(med PRIVATE
     $<$<CONFIG:Debug>:-O0>
     $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
     $<$<CONFIG:Debug>:-funwind-tables>
+    $<$<CONFIG:Debug>:-fno-optimize-sibling-calls>
+)
+
+target_link_options(med PRIVATE
     $<$<CONFIG:Debug>:-rdynamic>
 )
 
 target_include_directories(med PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-

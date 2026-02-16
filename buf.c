@@ -44,8 +44,8 @@ int buf_dump(struct text_buf *buf) {
 }
 
 int buf_status(struct text_buf *buf) {
-    LOG(logfile,
-        "Buffer status:\n\
+    log_msg(logfile,
+            "Buffer status:\n\
  gap_buf %p\n\
  gap_buf_len %lu\n\
  target gap len %d\n\
@@ -54,8 +54,8 @@ int buf_status(struct text_buf *buf) {
  dirty %d\n\
  actual_gap %d\n\
  chars %d\n",
-        (void *)buf->gap_buf, buf->gap_buf_len, buf->target_gap_len, buf->back, buf->cursor,
-        buf->dirty, buf_gap_len(buf), buf_chars(buf));
+            (void *)buf->gap_buf, buf->gap_buf_len, buf->target_gap_len, buf->back, buf->cursor,
+            buf->dirty, buf_gap_len(buf), buf_chars(buf));
     LOG(logfile, "Front:\n%s\nBack:\n%s\n", buf->gap_buf, buf->gap_buf + buf->back);
     return 0;
 }
@@ -151,17 +151,14 @@ int buf_seek(struct text_buf *buf, int pos) {
 // }
 
 int buf_open(struct text_buf *buf, const char *filename, FILE *file) {
-    size_t size = 65536;
+    size_t size;
     assert_bt(buf != 0);
     assert_bt(strlen(filename) > 0);
-    if (strlen(filename) > 0) {
-        file = fopen(filename, "rw+");
-        if (file == 0) {
-            show_status("buf_open: can't open %s", filename);
-            return -1;
-        }
-        size = get_file_size(file);
-    }
+    file = fopen(filename, "rw+");
+    assert_bt(file != 0);
+    size           = get_file_size(file);
+    int chars_read = fread(buf->gap_buf, 1, size, buf->fp);
+    assert_bt(chars_read = size);
     assert_bt(buf_init(buf, size) >= 0);
     buf_check(buf);
     return size;

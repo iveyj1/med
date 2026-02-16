@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <execinfo.h>
 
 #define BT_SIZE 32
@@ -58,9 +59,20 @@ int str_len(const char *str, int buflen);
  */
 size_t get_file_size(FILE *file);
 
-#define LOG(logfile, fmt, ...)            \
-    fprintf(logfile, fmt, ##__VA_ARGS__); \
-    fflush(logfile);
+static inline void log_msg(FILE *log_file, const char *fmt, ...) {
+    if (log_file == NULL || fmt == NULL) {
+        return;
+    }
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(log_file, fmt, args);
+    va_end(args);
+
+    fflush(log_file);
+}
+
+#define LOG(...) log_msg(__VA_ARGS__)
 
 extern FILE *logfile;
 
@@ -73,4 +85,4 @@ extern FILE *logfile;
 //         }                                                                                   \
 //     } while (0)
 //
-// #endif
+#endif

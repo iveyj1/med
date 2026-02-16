@@ -46,11 +46,12 @@ if [[ $FORMAT_CODE ]]; then
 fi
 
 if [[ $CLEAN ]]; then
-    LAST=`pwd` && cd build && rm -rf *; cd $LAST
-    echo
-    echo "Configuring with 'cmake -S . -B build $BUILD_FLAGS'"
-    cmake -S . -B build $BUILD_FLAGS
+    rm -rf build/*
 fi
+
+echo
+echo "Configuring with 'cmake -S . -B build $BUILD_FLAGS'"
+cmake -S . -B build $BUILD_FLAGS
 
 echo
 echo "Building with 'cmake --build build'"
@@ -60,4 +61,3 @@ if [[ $STRIP ]]; then
     echo "Stripping executable"
     cd build && strip med
 fi
-

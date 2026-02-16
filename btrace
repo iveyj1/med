@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RESOLVER="$ROOT_DIR/symtrace.py"
+
+if [[ ! -f "$RESOLVER" ]]; then
+    echo "btrace: missing resolver script: $RESOLVER" >&2
+    exit 1
+fi
+
+if [[ "${1-}" == "-f" || "${1-}" == "--file" ]]; then
+    if [[ -z "${2-}" ]]; then
+        echo "Usage: $0 [args for med] | $0 --file TRACE_FILE" >&2
+        exit 2
+    fi
+    python3 "$RESOLVER" "$2"
+    exit 0
+fi
+
+BIN="${MED_BIN:-$ROOT_DIR/build/med}"
+if [[ ! -x "$BIN" ]]; then
+    echo "btrace: executable not found: $BIN" >&2
+    echo "Build first with ./b -d (or set MED_BIN=/path/to/med)" >&2
+    exit 1
+fi
+
+if command -v script >/dev/null 2>&1; then
+    cmd=$(printf "%q " "$BIN" "$@")
+    script -q -e -c "$cmd" /dev/null 2>&1 | python3 "$RESOLVER"
+else
+    echo "btrace: 'script' not found; running without a pseudo-terminal" >&2
+    echo "btrace: TTY-sensitive code may fail earlier than direct runs" >&2
+    "$BIN" "$@" 2>&1 | python3 "$RESOLVER"
+fi

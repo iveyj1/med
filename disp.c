@@ -20,15 +20,12 @@ int setup_display() {
     return 0;
 }
 
-int show_status(const char *fmt, ...) {
+int show_status() {
     int row, col;
     getCursorPosition(&row, &col);
-    moveTo(ws.ws_row - 1, 0);
+    moveTo(ws.ws_row, 0);
     clearScreenToBottom();
-    va_list args;
-    va_start(args, fmt);
-    vprintf(fmt, args);
-    va_end(args);
+    printf("%s", status);
     moveTo(row, col);
     return (0);
 }
@@ -55,14 +52,15 @@ int draw_pane(struct text_buf *buf) {
             fflush(NULL);
         } else {
             line++;
-            if (line >= ws.ws_row) {
+            if (line >= ws.ws_row - 1) {
                 LOG(logfile, "end of pane reached\n");
                 break;
             }
-            LOG(logfile, "newline, moving to left of line %d\n", line);
+            // LOG(logfile, "newline, moving to left of line %d\n", line);
             moveTo(line, 0);
             fflush(NULL);
         }
     }
+    show_status();
     return 0;
 }

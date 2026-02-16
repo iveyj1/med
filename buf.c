@@ -83,10 +83,10 @@ int buf_get_char(struct text_buf *buf, int index) {
     assert_bt(index < buf_chars(buf));
     if (index <= buf->cursor) {
         c = buf->gap_buf[index];
-        LOG(logfile, "buf_get_char index in front %d %c %x\n", index, c, c);
+        // LOG(logfile, "buf_get_char index in front %d %c %x\n", index, c, c);
     } else {
         c = buf->gap_buf[index - buf->cursor + buf->back - 1];
-        LOG(logfile, "buf_get_char index in back %d %c %x\n", index, c, c);
+        // LOG(logfile, "buf_get_char index in back %d %c %x\n", index, c, c);
     }
     return c;
 }
@@ -150,16 +150,24 @@ int buf_seek(struct text_buf *buf, int pos) {
 //     return i;
 // }
 
-int buf_open(struct text_buf *buf, const char *filename, FILE *file) {
+int buf_open(struct text_buf *buf, const char *filename) {
     size_t size;
     assert_bt(buf != 0);
     assert_bt(strlen(filename) > 0);
-    file = fopen(filename, "rw+");
+    assert(buf->fp == 0);
+    FILE *file = fopen(filename, "ab+");
     assert_bt(file != 0);
-    size           = get_file_size(file);
-    int chars_read = fread(buf->gap_buf, 1, size, buf->fp);
+    size = get_file_size(file);
+    buf_init(buf, size);
+    buf->fp           = file;
+    size_t chars_read = fread(buf->gap_buf, 1, size, buf->fp);
+    buf->cursor       = chars_read;
+    assert(buf->cursor + 1 < buf->back);
+    buf->gap_buf[buf->cursor + 1] = '\0';
     assert_bt(chars_read = size);
-    assert_bt(buf_init(buf, size) >= 0);
+    str_copy_n(buf->fname, 1024, filename);
+    buf_status(buf);
+    buf_dump(buf);
     buf_check(buf);
     return size;
 }

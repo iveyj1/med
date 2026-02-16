@@ -4,6 +4,17 @@
 #include <stddef.h>
 #include <stdio.h>
 
+// gap buf - char array on heap allocated at init time
+// gap_buf_len - number of chars in above
+// cursor - index into gap_buf array of last character of valid
+//     content at the start of the buffer
+// back - index into gap_buf array of first valid character at the end of array
+// target_gap_len - when resizing buffer, this is the target of scratch
+//     area between the front and back array
+// fp - FILE pointer of file associated with buffer
+// fname - file name associated with buffer
+// dirty - flag indicating buffer contents have changed since last written
+// `
 struct text_buf {
     char  *gap_buf;
     size_t gap_buf_len;
@@ -24,7 +35,7 @@ int buf_dump(struct text_buf *buf);
 int buf_append(struct text_buf *buf, const char *str, size_t maxstrlen);
 int buf_seek(struct text_buf *buf, int pos);
 // int buf_getline(struct text_buf *buf, int startindex, char *line, int linebuflen);
-int buf_open(struct text_buf *buf, const char *filename, FILE *file);
+int buf_open(struct text_buf *buf, const char *filename);
 int buf_get_char(struct text_buf *buf, int index);
 
 #endif

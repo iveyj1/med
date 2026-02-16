@@ -7,10 +7,12 @@ extern struct winsize ws;
 
 int setup_display(void);
 
-int show_status(const char *fmt, ...);
+int show_status();
 
 int cleanup_display(void);
 
 int draw_pane(struct text_buf *buf);
+
+extern char status[];
 
 #endif

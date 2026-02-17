@@ -15,4 +15,10 @@ int draw_pane(struct text_buf *buf);
 
 extern char status[];
 
+struct panepos 
+  {
+      unsigned short int row;
+      unsigned short int col;
+      unsigned short int vcol;
+  }
 #endif

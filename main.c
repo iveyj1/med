@@ -25,7 +25,7 @@ char status[MAX_STATUS_LENGTH] = "";
 int main(int argc, char **argv) {
     int  err;
     char file_name[MAX_FILENAME_LEN] = "";
-    assert_bt((logfile = fopen("medlog", "w+")) != 0);
+    assert_bt((logfile = fopen("medlog", "r+")) != 0);
     assert_bt(setup_display() >= 0);
     assert_bt(argc > 1);
     err = buf_open(&main_buf, argv[1]);

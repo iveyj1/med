@@ -26,8 +26,26 @@ int buf_check(struct text_buf *buf) {
 }
 
 int buf_resize(struct text_buf *buf, size_t len) {
-    // if (len >= buf->back - buf->cursor) {
-    // }
+    assert_bt(false);
+    return 0;
+}
+
+// returns the buffer position of the start of the line numlines before (-) or 
+// after (+) the cursor
+int buf_find_line(struct text_buf *buf, int line_count) {
+    int line = line_count;
+    int pos;
+    int bufchars = buf_chars(buf);
+    if(line_count > 0) {
+        for(pos=buf_tell(buf); pos<bufchars; pos++) {
+            char c = buf_get_char(pos);
+            if(c == '\n') {
+                if(--line == 0){
+                    break;
+                }
+            }
+        }
+
     return 0;
 }
 

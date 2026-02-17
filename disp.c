@@ -10,6 +10,9 @@
 #include "utils.h"
 
 struct winsize ws = {0, 0};
+struct panepos ppos = {0, 0, 0};
+
+int top_line=0;
 
 int setup_display() {
     setupConsole();
@@ -19,6 +22,35 @@ int setup_display() {
     }
     return 0;
 }
+
+int set_line(struct text_buf *buf, int line){
+    assert(line > 0);
+    int lastline = buf_lines(buf);
+    if(buf_lines() > lines){
+        top_line = line;
+    } else {
+        top_line = lastline;
+    }
+    return line;
+}
+
+int find_line(struct text_buf *buf, int lines) {
+
+    
+    return 0;
+}
+
+
+
+int page_down(struct text_buf *buf, int pages) {
+    int i;
+    for(i=1; i<pages; i++) {
+        top_line = top_line + ws.ws_row;
+        col = find_col(
+        find_line(buf, ws.ws_row); }
+}
+
+
 
 int show_status() {
     int row, col;

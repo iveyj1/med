@@ -20,5 +20,5 @@ struct panepos
       unsigned short int row;
       unsigned short int col;
       unsigned short int vcol;
-  }
+  };
 #endif

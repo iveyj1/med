@@ -35,7 +35,7 @@ int buf_dump(struct text_buf *buf);
 int buf_append(struct text_buf *buf, const char *str, size_t maxstrlen);
 int buf_seek(struct text_buf *buf, int pos);
 int buf_seek_line(struct text_buf *buf, int numlines);
-inline int buf_tell(struct text_buf *buf) { return buf->cursor };
+inline int buf_tell(struct text_buf *buf) { return buf->cursor; }
 int buf_open(struct text_buf *buf, const char *filename);
 int buf_get_char(struct text_buf *buf, int index);
 

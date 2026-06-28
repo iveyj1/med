@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "disp.h"
+#include <disp.h>
 
 #define BT_SIZE 32
 
@@ -23,7 +23,7 @@ static FILE *open_assert_log(void) {
 void __assert_fail_bt(const char *expr, const char *file, int line) {
     FILE *assert_log = open_assert_log();
 
-    fprintf(stderr, "Assertion failed: %s (%s:%d)\n", expr, file, line);
+    fprintf(stderr, "Assertion failed: %s (%s:%d)\n\n", expr, file, line);
     if (assert_log != NULL) {
         fprintf(assert_log, "Assertion failed: %s (%s:%d)\n", expr, file, line);
         fflush(assert_log);
@@ -65,6 +65,7 @@ size_t str_copy_n(char *dst, size_t dstsz, const char *src) {
 
     return srclen;
 }
+
 size_t str_cat_n(char *dst, size_t dstsz, const char *src) {
     size_t dstlen = strlen(dst);
     size_t srclen = strlen(src);

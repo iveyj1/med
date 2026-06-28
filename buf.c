@@ -38,14 +38,14 @@ int buf_find_line(struct text_buf *buf, int line_count) {
     int bufchars = buf_chars(buf);
     if(line_count > 0) {
         for(pos=buf_tell(buf); pos<bufchars; pos++) {
-            char c = buf_get_char(pos);
+            char c = buf_get_char(buf, pos);
             if(c == '\n') {
                 if(--line == 0){
                     break;
                 }
             }
         }
-
+    }
     return 0;
 }
 

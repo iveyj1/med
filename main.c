@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     assert_bt(setup_display() >= 0);
     assert_bt(argc > 1);
     err = buf_open(&main_buf, argv[1]);
-    snprintf(status, MAX_STATUS_LENGTH, "%s:%d", main_buf.fname, buf_chars(&main_buf));
+    snprintf(status, MAX_STATUS_LENGTH, "%-.*s:%d", 20, main_buf.fname, buf_chars(&main_buf));
     draw_pane(&main_buf);
     edit();
     cleanup_display();
